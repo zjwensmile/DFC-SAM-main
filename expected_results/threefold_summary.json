@@ -1,0 +1,41 @@
+{
+  "model": "RF-DETR-2XL + SAM-H + DFB + UGCA-v3 + class-aware four-view TTA",
+  "metric_scale": "percent",
+  "std_definition": "population standard deviation across three held-out tests (ddof=0)",
+  "splits": [
+    {"split_id": 1, "test_fold": 3, "images": 2722, "bpq": 70.553611, "mpq": 52.581874, "f1det": 83.283685, "macro_f1": 67.982429},
+    {"split_id": 2, "test_fold": 1, "images": 2656, "bpq": 70.483715, "mpq": 53.568419, "f1det": 83.401248, "macro_f1": 70.165618},
+    {"split_id": 3, "test_fold": 2, "images": 2523, "bpq": 69.546649, "mpq": 51.679969, "f1det": 83.278639, "macro_f1": 69.077568}
+  ],
+  "threefold_mean": {"bpq": 70.194658, "mpq": 52.610087, "f1det": 83.321191, "macro_f1": 69.075205},
+  "threefold_std_population": {"bpq": 0.459099, "mpq": 0.771214, "f1det": 0.056646, "macro_f1": 0.891285},
+  "class_pq_threefold_mean": {
+    "neoplastic": 60.747550,
+    "epithelial": 59.858089,
+    "inflammatory": 45.636612,
+    "connective_soft": 45.204890,
+    "dead": 18.397221,
+    "mpq_cls": 45.968872
+  },
+  "tissue_threefold_mean": {
+    "Adrenal Gland": {"bpq": 72.920156, "mpq": 53.198682},
+    "Bile Duct": {"bpq": 70.934112, "mpq": 52.630193},
+    "Bladder": {"bpq": 73.368685, "mpq": 59.981606},
+    "Breast": {"bpq": 69.281215, "mpq": 54.000035},
+    "Cervix": {"bpq": 69.694356, "mpq": 52.051870},
+    "Colon": {"bpq": 62.970027, "mpq": 49.249206},
+    "Esophagus": {"bpq": 69.327994, "mpq": 57.725040},
+    "Head & Neck": {"bpq": 68.806617, "mpq": 52.654576},
+    "Kidney": {"bpq": 73.793092, "mpq": 56.578898},
+    "Liver": {"bpq": 75.593358, "mpq": 55.825776},
+    "Lung": {"bpq": 66.592185, "mpq": 45.548177},
+    "Ovarian": {"bpq": 68.403744, "mpq": 53.693244},
+    "Pancreatic": {"bpq": 69.565734, "mpq": 54.178157},
+    "Prostate": {"bpq": 70.434032, "mpq": 58.282557},
+    "Skin": {"bpq": 68.153425, "mpq": 44.414462},
+    "Stomach": {"bpq": 72.308122, "mpq": 48.511170},
+    "Testis": {"bpq": 72.346025, "mpq": 55.169255},
+    "Thyroid": {"bpq": 72.915870, "mpq": 49.236268},
+    "Uterus": {"bpq": 66.289758, "mpq": 46.662489}
+  }
+}
