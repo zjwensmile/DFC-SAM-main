@@ -1,0 +1,17 @@
+DFC-SAM research release
+
+Copyright (c) 2026. All rights reserved unless separately stated.
+
+The project-authored source in this release is provided for academic research
+and reproducibility. No warranty is provided. Before the public GitHub release,
+the copyright holder should replace this notice with the intended final code
+license.
+
+This notice does not relicense third-party software, model components, datasets,
+or derived weights. In particular:
+
+- RF-DETR-2XL / rfdetr-plus is subject to Roboflow PML-1.0 and the applicable
+  Roboflow Platform Agreement. See licenses/RFDETR_PLUS_PML-1.0.txt.
+- Segment Anything is subject to its upstream Apache-2.0 license.
+- PanNuke is distributed under CC BY-NC-SA 4.0.
+- The upstream PanNuke metrics repository has its own distribution terms.

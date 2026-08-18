@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dfc-sam-rf2xl"
+version = "1.0.0"
+description = "RF-DETR-2XL + SAM-H DFC-SAM reproduction on PanNuke"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+license = {text = "Research-only; see THIRD_PARTY.md and dataset licenses"}
+dependencies = [
+    "numpy==1.26.4",
+    "Pillow==11.3.0",
+    "PyYAML==6.0.2",
+    "scipy==1.15.3",
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "transformers>=5.1.0,<6.0.0",
+]
+
+[project.optional-dependencies]
+data = [
+    "opencv-python==4.11.0.86",
+    "pycocotools==2.0.10",
+]
+official-metrics = [
+    "docopt==0.6.2",
+    "pandas==2.3.3",
+]
+dev = [
+    "pytest==8.4.1",
+    "ruff==0.12.7",
+]
+
+[tool.setuptools.packages.find]
+include = ["dfc_sam*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
