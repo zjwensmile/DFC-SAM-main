@@ -90,7 +90,7 @@ original PanNuke fold rotation without creating a new random image-level split:
 The large files are not stored in GitHub. Download the release archive from:
 
 ```text
-GOOGLE_DRIVE_URL_TO_BE_ADDED
+[GOOGLE_DRIVE_URL_TO_BE_ADDED](https://drive.google.com/drive/folders/10TX81FeUtgi7aGWxu7vsqRi43Rg8pawa?usp=drive_link)
 ```
 
 Place the files as follows:
