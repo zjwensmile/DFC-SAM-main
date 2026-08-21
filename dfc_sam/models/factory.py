@@ -40,7 +40,20 @@ def build_dfc_sam(config: Mapping[str, Any]) -> DFCSAM:
         from .rfdetr_adapter import load_rfdetr_2xlarge_adapter
 
         detector = load_rfdetr_2xlarge_adapter(detector_checkpoint)
-        assignment = RFDETRAssignmentAdapter(training_args=detector.wrapper.model.args)
+        context = detector.wrapper.model
+        criterion = None
+        if str(config.get("train", {}).get("joint_training_mode", "full")) == "full":
+            # ``from_checkpoint`` exposes an inference ModelContext rather than
+            # RF-DETR's Lightning training module. Rebuild the pinned native
+            # criterion from the checkpoint's own BuilderArgs so Stage III uses
+            # the same class/L1/GIoU loss coefficients as Stage I.
+            from rfdetr.models.lwdetr import build_criterion_and_postprocessors
+
+            criterion, _ = build_criterion_and_postprocessors(context.args)
+        assignment = RFDETRAssignmentAdapter(
+            training_args=context.args,
+            criterion=criterion,
+        )
         bridge_type = RFDETRFeatureBridge
     else:
         raise ValueError(f"Unsupported detector architecture: {architecture}")

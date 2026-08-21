@@ -17,8 +17,8 @@ class DetectorOutput:
     p3: Tensor
     p4: Tensor
     p5: Tensor
-    raw_one2many: dict[str, Tensor]
-    raw_one2one: dict[str, Tensor]
+    raw_one2many: dict[str, Any]
+    raw_one2one: dict[str, Any]
     decoded_boxes_xyxy: Tensor
     base_logits: Tensor
     semantic_features: Tensor

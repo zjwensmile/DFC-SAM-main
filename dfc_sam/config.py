@@ -88,6 +88,7 @@ def validate_experiment_config(config: dict[str, Any]) -> None:
     if sam_variant not in {"vit_b", "vit_h"}:
         raise ConfigError(f"sam.variant must be vit_b or vit_h, got {sam_variant!r}")
     architecture = str(detector.get("architecture", ""))
+    joint_training_mode = str(config.get("train", {}).get("joint_training_mode", "full"))
     if architecture not in {"yolo26x", "rfdetr_2xlarge"}:
         raise ConfigError(f"Unsupported detector architecture: {architecture!r}")
     if architecture == "rfdetr_2xlarge":
@@ -95,10 +96,19 @@ def validate_experiment_config(config: dict[str, Any]) -> None:
             raise ConfigError("RF-DETR-2XL DFC-SAM integration is frozen at detector.imgsz=880")
         if bool(detector.get("resize_antialias", True)):
             raise ConfigError("RF-DETR-2XL requires detector.resize_antialias=false")
-        if not bool(detector.get("frozen_in_dfc_sam", False)):
-            raise ConfigError("RF-DETR-2XL must set detector.frozen_in_dfc_sam=true")
-        if bool(detector.get("dfc_coupled_mode", False)):
-            raise ConfigError("RF-DETR-2XL forbids detector gradient coupling in DFC-SAM")
+        detector_frozen = bool(detector.get("frozen_in_dfc_sam", False))
+        detector_coupled = bool(detector.get("dfc_coupled_mode", False))
+        if joint_training_mode == "full":
+            if detector_frozen or not detector_coupled:
+                raise ConfigError(
+                    "Full RF-DETR Stage III requires frozen_in_dfc_sam=false "
+                    "and dfc_coupled_mode=true"
+                )
+        elif not detector_frozen or detector_coupled:
+            raise ConfigError(
+                "Non-joint RF-DETR configurations require frozen_in_dfc_sam=true "
+                "and dfc_coupled_mode=false"
+            )
     inference = config.get("inference", {})
     for key in ("logit_blend", "quality_power", "sam_iou_power", "mask_stability_power"):
         value = float(inference.get(key, 1.0))
@@ -351,6 +361,23 @@ def validate_experiment_config(config: dict[str, Any]) -> None:
             raise ConfigError(
                 "detector_head_adaptive Joint requires validation.initialize_joint_best_from_parent=true"
             )
+    elif joint_training_mode == "full":
+        loss = config.get("loss", {})
+        if flow != "warmup_joint":
+            raise ConfigError("Full Joint training requires train.flow=warmup_joint")
+        if any(float(loss.get(key, 0.0)) <= 0.0 for key in ("lambda_det", "lambda_seg", "lambda_ugca")):
+            raise ConfigError("Full Joint training requires positive detection, segmentation, and UGCA losses")
+        if not bool(train.get("train_student_decoder_in_joint", False)):
+            raise ConfigError("Full Joint training requires train_student_decoder_in_joint=true")
+        rates = train.get("learning_rates", {})
+        for key in ("joint_detector", "joint_bridge", "joint_student_decoder", "joint_ugca"):
+            if float(rates.get(key, 0.0)) <= 0.0:
+                raise ConfigError(f"Full Joint training requires positive train.learning_rates.{key}")
+        if architecture == "rfdetr_2xlarge":
+            expected_weights = {"lambda_det": 0.25, "lambda_seg": 1.0, "lambda_ugca": 0.25}
+            for key, expected in expected_weights.items():
+                if abs(float(loss.get(key, 0.0)) - expected) > 1.0e-12:
+                    raise ConfigError(f"Paper RF protocol requires loss.{key}={expected}")
     for stage_name in ("warmup", "joint"):
         world_size_key = f"{stage_name}_world_size_per_split"
         world_size = int(train.get(world_size_key, 1))

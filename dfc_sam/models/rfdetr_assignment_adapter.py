@@ -1,4 +1,4 @@
-"""Hungarian positive-query identity for the frozen RF-DETR detector."""
+"""Hungarian matching and native detector loss for RF-DETR."""
 
 from __future__ import annotations
 
@@ -11,9 +11,17 @@ from .assignment_adapter import MatchedQueries
 
 
 class RFDETRAssignmentAdapter:
-    """Use RF-DETR's native matcher while keeping detector loss disabled."""
+    """Use RF-DETR's native matcher and criterion on DFC-SAM batches."""
 
-    def __init__(self, matcher: Any | None = None, *, training_args: Any | None = None) -> None:
+    def __init__(
+        self,
+        matcher: Any | None = None,
+        *,
+        training_args: Any | None = None,
+        criterion: Any | None = None,
+    ) -> None:
+        if matcher is None and criterion is not None:
+            matcher = getattr(criterion, "matcher", None)
         if matcher is None:
             try:
                 from rfdetr.models.matcher import HungarianMatcher, build_matcher
@@ -30,6 +38,11 @@ class RFDETRAssignmentAdapter:
                 )
             )
         self.matcher = matcher
+        self.criterion = criterion
+        if self.criterion is not None:
+            # DFC-SAM uses RF's one-group inference query layout during joint
+            # optimization, so the criterion must normalize for group_detr=1.
+            self.criterion.eval()
 
     @staticmethod
     def _targets(batch: dict[str, Tensor], batch_size: int) -> list[dict[str, Tensor]]:
@@ -74,9 +87,26 @@ class RFDETRAssignmentAdapter:
             raise RuntimeError("RF-DETR matcher produced an out-of-range target index")
         return MatchedQueries(batch_indices, query_indices, target_indices, within)
 
-    @staticmethod
-    def detection_loss(*_args: Any, **_kwargs: Any) -> tuple[Tensor, dict[str, Tensor]]:
-        raise RuntimeError(
-            "RF-DETR detector loss is intentionally disabled in DFC-SAM. "
-            "Freeze the selected Stage-I detector and train Bridge, then UGCA."
-        )
+    def detection_loss(
+        self,
+        _raw_one2many: dict[str, Any],
+        raw_one2one: dict[str, Any],
+        batch: dict[str, Tensor],
+    ) -> tuple[Tensor, dict[str, Tensor]]:
+        """Return RF-DETR's weighted native detection objective."""
+        if self.criterion is None:
+            raise RuntimeError(
+                "RF-DETR joint training requires the native criterion from the loaded detector"
+            )
+        targets = self._targets(batch, int(raw_one2one["pred_logits"].shape[0]))
+        losses = self.criterion(raw_one2one, targets)
+        weight_dict = getattr(self.criterion, "weight_dict", {})
+        weighted = {
+            key: value * float(weight_dict[key])
+            for key, value in losses.items()
+            if key in weight_dict
+        }
+        if not weighted:
+            raise RuntimeError("RF-DETR native criterion returned no weighted detection losses")
+        total = torch.stack(tuple(weighted.values())).sum()
+        return total, {key: value.detach() for key, value in weighted.items()}

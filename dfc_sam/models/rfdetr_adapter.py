@@ -69,7 +69,7 @@ def _cxcywh_to_xyxy(boxes: Tensor, image_hw: tuple[int, int]) -> Tensor:
 
 
 class RFDETR2XLAdapter(nn.Module):
-    """Expose a frozen five-class RF-DETR-2XL through ``DetectorOutput``."""
+    """Expose a five-class RF-DETR-2XL through ``DetectorOutput``."""
 
     class_probability_mode = "sigmoid"
     feature_source_names = ("dino_shallow", "dino_deep", "projected_p4")
@@ -136,9 +136,23 @@ class RFDETR2XLAdapter(nn.Module):
         if not hasattr(backbone, "encoder") or not hasattr(backbone, "projector"):
             raise TypeError("RF-DETR backbone does not expose encoder/projector hooks")
         if tuple(str(value) for value in backbone.projector_scale) != ("P4",):
-            raise ValueError("The frozen RF-DETR-2XL integration expects one projected P4 feature")
+            raise ValueError("The pinned RF-DETR-2XL integration expects one projected P4 feature")
         if self.semantic_dim != 512:
             raise ValueError(f"Expected RF-DETR-2XL semantic width 512, got {self.semantic_dim}")
+
+    def train(self, mode: bool = True) -> RFDETR2XLAdapter:
+        """Keep RF-DETR's one-group query layout while allowing gradients.
+
+        The upstream module expands its query bank into training groups when
+        ``model.training`` is true. DFC-SAM must retain the one-to-one 300-query
+        identity used by the Bridge and Hungarian matcher, so Stage III enables
+        parameter gradients but keeps the wrapped RF forward in evaluation
+        layout. Bridge/SAM/UGCA modes are managed independently by the stage
+        policy.
+        """
+        super().train(mode)
+        self.model.eval()
+        return self
 
     def forward(
         self,
@@ -203,7 +217,9 @@ class RFDETR2XLAdapter(nn.Module):
         if logits.shape[:2] != semantics.shape[:2]:
             raise RuntimeError("RF-DETR semantic queries are not aligned with final predictions")
         query_indices = torch.arange(logits.shape[1], device=images.device, dtype=torch.long)
-        native = {"pred_logits": logits_with_background, "pred_boxes": boxes_cxcywh}
+        # Preserve auxiliary/encoder predictions for the native Stage-III
+        # detection criterion while DFB consumes only the aligned final layer.
+        native = dict(raw)
         return DetectorOutput(
             p3=encoder[0],
             p4=encoder[-1],
@@ -218,7 +234,7 @@ class RFDETR2XLAdapter(nn.Module):
 
 
 def load_rfdetr_2xlarge_adapter(checkpoint: str | Path) -> RFDETR2XLAdapter:
-    """Load the frozen RF-DETR checkpoint without importing it on YOLO-only runs."""
+    """Load the Stage-I RF-DETR checkpoint without importing it on YOLO-only runs."""
     try:
         from rfdetr import from_checkpoint
     except ImportError as exc:  # pragma: no cover - depends on the isolated RF venv

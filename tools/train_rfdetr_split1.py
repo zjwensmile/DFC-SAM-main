@@ -115,7 +115,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
             "effective_batch": args.batch_size * args.grad_accum_steps * world_size,
             "lr": args.lr,
             "lr_encoder": args.lr_encoder,
-            "early_stopping": True,
+            "early_stopping": args.early_stopping,
             "early_stopping_patience": args.patience,
             "early_stopping_min_delta": args.min_delta,
             "skip_best_epochs": 5,
@@ -148,13 +148,19 @@ def main() -> None:
     parser.add_argument("--weight", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--resolution", type=int, required=True)
-    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, required=True, help="Per-GPU batch size")
     parser.add_argument("--grad-accum-steps", type=int, required=True)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--devices", default="auto")
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--lr-encoder", type=float, default=1.5e-4)
+    parser.add_argument("--lr-encoder", type=float, default=1e-4)
+    parser.add_argument(
+        "--early-stopping",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable validation early stopping; disabled in the 50-epoch manuscript protocol",
+    )
     parser.add_argument("--patience", type=int, default=20)
     parser.add_argument("--min-delta", type=float, default=0.001)
     parser.add_argument("--gradient-checkpointing", action="store_true")
@@ -200,7 +206,7 @@ def main() -> None:
         )
         return
     if os.environ.get("RFDETR_SEQUENCE_AUTHORIZED") != "1":
-        raise RuntimeError("Formal execution is only allowed through scripts/rfdetr_stage1_sequence.sh")
+        raise RuntimeError("Formal execution is only allowed through scripts/train_split.sh")
 
     output = Path(plan["output"])
     model.train(
@@ -217,7 +223,7 @@ def main() -> None:
         devices=args.devices,
         seed=42,
         use_ema=True,
-        early_stopping=True,
+        early_stopping=args.early_stopping,
         early_stopping_patience=args.patience,
         early_stopping_min_delta=args.min_delta,
         skip_best_epochs=5,
