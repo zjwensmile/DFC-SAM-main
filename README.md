@@ -18,17 +18,17 @@ are **DFC-SAM(RF)-H**.
 > data cannot be redistributed, and the MoNuSAC experiment is not included in
 > this release.
 
+<p align="center">
+  <img src="assets/figures/figure-1-concept.svg" alt="From conventional box prompting to differentiable feature coupling" width="88%">
+</p>
+<p align="center"><em>Figure 1. From conventional box prompting to differentiable feature coupling.</em></p>
+
 ## Method at a glance
 
-```text
-image
-  ├─ RF-DETR-2XL ─ multi-depth features + matched query semantics + continuous boxes
-  │                         │
-  │                         ▼
-  │                        DFB ── dense instance-conditioned prompts ──► SAM-H ──► masks
-  │                                                                       │
-  └──────────────── class evidence ◄──────────── UGCA ◄── local morphology ┘
-```
+<p align="center">
+  <img src="assets/figures/figure-2-dfc-sam-framework.svg" alt="Overall DFC-SAM framework with the DFB and UGCA modules" width="100%">
+</p>
+<p align="center"><em>Figure 2. Overall DFC-SAM framework. DFB couples detector features to SAM, while UGCA feeds morphology-aware evidence back to classification.</em></p>
 
 - **Differentiable Feature Bridge (DFB)** fuses multi-depth detector features,
   matched-query semantics, and continuous predicted boxes through
@@ -97,6 +97,11 @@ reports 768.6M parameters and 2905.6G MACs for single-view inference. Relative
 to the same RF-DETR-2XL + SAM-H box-prompt baseline, however, DFB and UGCA add
 only 1.2M parameters (+0.16%) and 2.2G MACs (+0.08%), while improving bPQ by
 2.8 points, mPQ by 4.0 points, and Macro-F1 by 8.7 points.
+
+<p align="center">
+  <img src="assets/figures/figure-6-accuracy-capacity.svg" alt="Accuracy and model-capacity comparison between DFC-SAM and published methods" width="92%">
+</p>
+<p align="center"><em>Figure 6. Accuracy–capacity comparison with representative published methods.</em></p>
 
 ## Installation
 
