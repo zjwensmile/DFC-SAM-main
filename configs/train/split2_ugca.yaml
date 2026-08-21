@@ -1,0 +1,26 @@
+base: split2_warmup.yaml
+
+experiment:
+  name: rfdetr_2xlarge_sam_h_ugca_v3_split2
+  status: formal_frozen
+
+loss:
+  lambda_det: 0.0
+  lambda_seg: 0.0
+  lambda_ugca: 0.25
+  ugca_quality_ranking_loss_weight: 0.0
+
+train:
+  joint_training_mode: ugca_only
+  train_student_decoder_in_joint: false
+  joint_epochs: 16
+  joint_world_size_per_split: 4
+  batch_size_per_gpu: 2
+  gradient_accumulation: 4
+  learning_rates:
+    joint_ugca: 1.0e-5
+
+validation:
+  initialize_joint_best_from_parent: true
+  early_stopping:
+    joint: {enabled: true, min_epochs: 10, patience: 4, min_delta: 0.001}

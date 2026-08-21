@@ -19,51 +19,12 @@ from dfc_sam.data.collate import collate_pannuke
 from dfc_sam.data.pannuke_dataset import PanNukeDataset
 from dfc_sam.data.transforms import build_model_input_transform
 from dfc_sam.engine.trainer import move_batch_to_device
-from dfc_sam.evaluation.inference import quality_scaled_class_probabilities, resolve_final_score_thresholds
+from dfc_sam.evaluation.inference import batch_predictions
 from dfc_sam.evaluation.official_metrics import OfficialMetricAccumulator, load_official_primitives
-from dfc_sam.evaluation.overlap_resolution import resolve_pannuke_instances
-from dfc_sam.evaluation.tta import TTA_VIEWS, TTAFusionSettings, fuse_tta_views, transform_spatial
 from dfc_sam.evaluation.validation import _ground_truth_batch
 from dfc_sam.models.release_checkpoint import load_release_model
 from dfc_sam.utils.hashing import atomic_write_json, sha256_file
 from dfc_sam.utils.reproducibility import seed_everything
-
-
-def _tta_settings(config: dict[str, Any]) -> TTAFusionSettings:
-    payload = dict(config["inference"]["tta"])
-    if not payload.pop("enabled", False) or tuple(payload.pop("views", ())) != TTA_VIEWS:
-        raise ValueError("Release evaluation requires the frozen four-view TTA")
-    settings = TTAFusionSettings(**payload)
-    settings.validate()
-    return settings
-
-
-def _extract_views(
-    output: Any, *, batch_size: int, view: str, inference: dict[str, Any]
-) -> list[dict[str, np.ndarray]]:
-    probabilities = quality_scaled_class_probabilities(
-        output,
-        logit_blend=float(inference.get("logit_blend", 1.0)),
-        quality_power=float(inference.get("quality_power", 1.0)),
-        quality_powers_by_class=inference.get("quality_powers_by_class"),
-        sam_iou_power=float(inference.get("sam_iou_power", 0.0)),
-        mask_stability_power=float(inference.get("mask_stability_power", 0.0)),
-        mask_stability_threshold=float(inference["mask_threshold"]),
-        mask_stability_delta=float(inference.get("mask_stability_delta", 0.05)),
-    )
-    masks = transform_spatial(output.mask_logits[:, 0].float().sigmoid(), view)
-    scores = output.base_logits.float().sigmoid().amax(dim=-1)
-    result = []
-    for batch_index in range(batch_size):
-        indices = (output.selected.batch_index == batch_index).nonzero(as_tuple=False).flatten()
-        result.append(
-            {
-                "mask_probabilities": masks.index_select(0, indices).cpu().numpy(),
-                "class_probabilities": probabilities.index_select(0, indices).cpu().numpy(),
-                "base_scores": scores.index_select(0, indices).cpu().numpy(),
-            }
-        )
-    return result
 
 
 def _aggregation_state(metrics: dict[str, Any]) -> dict[str, Any]:
@@ -121,7 +82,6 @@ def main() -> None:
     if list(split["test_folds"]) != [int(checkpoint["test_fold"])]:
         raise ValueError("Checkpoint test fold does not match the manifest test fold")
     config = checkpoint["config"]
-    settings = _tta_settings(config)
     dataset = PanNukeDataset(
         args.all_samples,
         args.split_manifest,
@@ -155,33 +115,41 @@ def main() -> None:
         match_iou=float(config["evaluation"]["pq_match_iou"]),
     )
     inference = config["inference"]
-    thresholds = resolve_final_score_thresholds(inference)
     started = time.monotonic()
     processed = 0
     with torch.inference_mode():
         for raw_batch in loader:
             truths = _ground_truth_batch(raw_batch)
             batch = move_batch_to_device(raw_batch, device)
-            views = []
-            for view in TTA_VIEWS:
-                model_output = model(
-                    transform_spatial(batch["yolo_images"], view),
-                    transform_spatial(batch["sam_resized_images"], view),
-                    stage="joint",
-                    pre_threshold=settings.pre_threshold,
-                    max_instances=int(inference["max_instances"]),
-                )
-                views.append(
-                    _extract_views(model_output, batch_size=len(batch["image_ids"]), view=view, inference=inference)
-                )
-            for batch_index, (image_id, tissue, truth) in enumerate(
-                zip(batch["image_ids"], batch["tissues"], truths, strict=True)
+            model_output = model(
+                batch["yolo_images"],
+                batch["sam_resized_images"],
+                stage="joint",
+                pre_threshold=float(inference["pre_threshold"]),
+                max_instances=int(inference["max_instances"]),
+            )
+            predictions = batch_predictions(
+                model_output,
+                batch_size=len(batch["image_ids"]),
+                mask_threshold=float(inference["mask_threshold"]),
+                final_score_threshold=float(inference["final_score_threshold"]),
+                logit_blend=float(inference.get("logit_blend", 1.0)),
+                quality_power=float(inference.get("quality_power", 1.0)),
+                quality_powers_by_class=inference.get("quality_powers_by_class"),
+                final_score_thresholds_by_class=inference.get("final_score_thresholds_by_class"),
+                sam_iou_power=float(inference.get("sam_iou_power", 0.0)),
+                mask_stability_power=float(inference.get("mask_stability_power", 0.0)),
+                mask_stability_delta=float(inference.get("mask_stability_delta", 0.05)),
+            )
+            for image_id, tissue, truth, prediction in zip(
+                batch["image_ids"], batch["tissues"], truths, predictions, strict=True
             ):
-                masks, probabilities, _ = fuse_tta_views(
-                    [view[batch_index] for view in views], settings, base_final_thresholds=thresholds
+                accumulator.update(
+                    truth,
+                    prediction["official_map"],
+                    tissue=str(tissue),
+                    image_id=str(image_id),
                 )
-                prediction = resolve_pannuke_instances(masks, probabilities, mask_threshold=settings.mask_threshold)
-                accumulator.update(truth, prediction, tissue=str(tissue), image_id=str(image_id))
                 processed += 1
             elapsed = time.monotonic() - started
             fraction = processed / max(len(indices), 1)
@@ -211,6 +179,8 @@ def main() -> None:
         "dataset_size": len(dataset),
         "dataset_indices": indices,
         "sample_count": processed,
+        "inference_view": "identity",
+        "tta_enabled": False,
         "elapsed_seconds": time.monotonic() - started,
         "checkpoint_sha256": sha256_file(args.checkpoint),
         "metrics": metrics,

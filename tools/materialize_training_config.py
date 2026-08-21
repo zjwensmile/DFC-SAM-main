@@ -39,7 +39,7 @@ def main() -> None:
     config["weights"]["sam_vit_h"] = str(args.sam_h.expanduser().resolve())
     config["loss"]["ugca_class_weights"] = _class_weights(args.split_manifest.expanduser().resolve())
     # Public test configs are self-contained architecture bases. Remove their
-    # validation-frozen class-aware/TTA policy when starting a new training run.
+    # validation-frozen class-aware inference policy when starting a new run.
     config["inference"] = {
         "pre_threshold": 0.05,
         "max_instances": 400,

@@ -1,5 +1,5 @@
 # Framework lock for the Python 3.10 `test` environment.
-# PyTorch CUDA wheels are installed from the cu118 index on this P100 server.
+# PyTorch CUDA wheels are installed from the cu118 index on the V100 server.
 docopt==0.6.2
 numpy==1.26.4
 opencv-python==4.11.0.86

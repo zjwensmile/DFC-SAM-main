@@ -1,8 +1,8 @@
 # Model weights
 
-The three large checkpoints are intentionally excluded from GitHub. Download the
-Google Drive weight archive announced with the release, verify `SHA256SUMS`, and
-place the files exactly as follows:
+The three large checkpoints are intentionally excluded from GitHub. Manually
+download the [Google Drive weight bundle](https://drive.google.com/drive/folders/10TX81FeUtgi7aGWxu7vsqRi43Rg8pawa?usp=sharing),
+verify `SHA256SUMS`, and place the files exactly as follows:
 
 ```text
 weights/

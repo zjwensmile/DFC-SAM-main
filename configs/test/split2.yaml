@@ -27,7 +27,7 @@ runtime:
   instance_chunk_size: 8
   inference_instance_chunk_size: 16
 _meta:
-  resolved_from: ./configs/experiments/rfdetr_2xlarge_sam_h_class_aware_split1.yaml
+  resolved_from: ./outputs/rfdetr_class_aware_review/split2/decision/calibrated_config.yaml
 dataset: pannuke
 raw_root: data/pannuke/raw
 prepared_root: data/pannuke/prepared
@@ -121,18 +121,18 @@ ugca:
   hard_negative_max_per_image: 32
   hard_negative_score_threshold: 0.05
 experiment:
-  name: rfdetr_2xlarge_sam_h_class_aware_split1
+  name: rfdetr_2xlarge_sam_h_ugca_v3_split2
   protocol: pannuke_standard_3fold
-  split_id: 1
+  split_id: 2
   seed: 42
   status: formal_frozen
 weights:
   yolo_generic: data/pannuke/prepared/weights/yolo26x.pt
   sam_vit_b: weights/pretrained/sam_vit_b_01ec64.pth
-  detector_stage1: ./outputs/rfdetr_stage1_sequence/20260809_191332/rfdetr_2xlarge/attempt_1/checkpoint_best_total.pth
+  detector_stage1: ./outputs/rfdetr_stage1_sequence/split2/rfdetr_2xlarge_best.pth
   teacher_stage2a: null
   quality_calibration: null
-  warmup_stage2: ./outputs/rfdetr_dfc_sam/sam_h_split1/warmup/best.pt
+  warmup_stage2: ./outputs/rfdetr_dfc_sam/sam_h_split2/warmup/best.pt
   pseudo_bank: null
   sam_vit_h: weights/pretrained/sam_vit_h_4b8939.pth
 supervision:
@@ -158,11 +158,11 @@ loss:
   lambda_ugca: 0.25
   dice_epsilon: 1.0e-06
   ugca_class_weights:
-  - 0.469002
-  - 0.704071
-  - 0.568584
-  - 2.486133
-  - 0.77221
+  - 0.470564
+  - 0.726309
+  - 0.574851
+  - 2.430051
+  - 0.798225
   ugca_label_smoothing: 0.05
   ugca_loss_normalization: per_image
   ugca_gate_loss_weight: 0.25
@@ -227,29 +227,14 @@ validation:
       min_delta: 0.001
   initialize_joint_best_from_parent: true
 inference:
-  pre_threshold: 0.4
+  pre_threshold: 0.35
   max_instances: 400
-  mask_threshold: 0.55
-  final_score_threshold: 0.35
+  mask_threshold: 0.35
+  final_score_threshold: 0.3
   use_box_nms: false
   use_mask_nms: false
   logit_blend: 1.0
-  quality_power: 0.25
-  quality_powers_by_class:
-  - 0.25
-  - 0.0
-  - 0.25
-  - 0.75
-  - 0.25
-  final_score_thresholds_by_class:
-  - 0.35
-  - 0.35
-  - 0.35
-  - 0.3
-  - 0.35
-  sam_iou_power: 0.0
-  mask_stability_power: 0.0
-  mask_stability_delta: 0.05
+  quality_power: 0.5
   tta:
     enabled: false
     views:

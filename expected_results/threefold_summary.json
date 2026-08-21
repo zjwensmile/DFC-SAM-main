@@ -1,5 +1,5 @@
 {
-  "model": "RF-DETR-2XL + SAM-H + DFB + UGCA-v3 + class-aware four-view TTA",
+  "model": "RF-DETR-2XL + SAM-H + DFB + UGCA-v3 + class-aware single-view inference",
   "metric_scale": "percent",
   "std_definition": "population standard deviation across three held-out tests (ddof=0)",
   "splits": [

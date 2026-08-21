@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Validation-only four-view geometric TTA calibration for RF-DETR/SAM-H."""
+"""Optional legacy validation-only four-view TTA experiment.
+
+This utility is retained for research comparisons and is not used by the
+single-view public release evaluator.
+"""
 
 from __future__ import annotations
 

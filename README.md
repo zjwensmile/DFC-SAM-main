@@ -3,8 +3,8 @@
 This repository is the public training and evaluation package for the
 three-fold PanNuke main experiment using
 RF-DETR-2XL, SAM-H, the Differentiable Feature Bridge (DFB), and UGCA-v3. The
-released test path uses each split's validation-frozen class-aware four-view TTA
-configuration.
+released test path uses single-view (identity) inference with each split's
+validation-frozen class-aware score configuration.
 
 ## Results
 
@@ -12,10 +12,10 @@ All values are percentages on the three non-overlapping held-out PanNuke folds.
 
 | Result | bPQ | mPQ | F1det | Macro-F1 |
 |---|---:|---:|---:|---:|
-| Split1 / Fold3, 2722 images | 71.554 | 52.582 | 83.284 | 67.982 |
+| Split1 / Fold3, 2722 images | 70.554 | 52.582 | 83.284 | 67.982 |
 | Split2 / Fold1, 2656 images | 70.484 | 53.568 | 83.401 | 70.166 |
 | Split3 / Fold2, 2523 images | 69.547 | 51.680 | 83.279 | 69.078 |
-| **Three-fold mean** | **70.528** | **52.610** | **83.321** | **69.075** |
+| **Three-fold mean** | **70.195** | **52.610** | **83.321** | **69.075** |
 
 | Neoplastic | Epithelial | Inflammatory | Connective/soft | Dead | mPQ_cls |
 |---:|---:|---:|---:|---:|---:|
@@ -42,7 +42,8 @@ copyright holder's intended final code license before publication.
 ## Installation
 
 Python 3.10 and a CUDA-capable PyTorch environment are recommended. The formal
-experiments used PyTorch 2.5.1, CUDA 11.8 wheels, and four Tesla P100 16GB GPUs.
+experiments used PyTorch 2.5.1, CUDA 11.8 wheels, and four NVIDIA Tesla V100
+GPUs.
 
 ```bash
 conda create -n dfc-sam-rf2xl python=3.10 -y
@@ -87,11 +88,9 @@ original PanNuke fold rotation without creating a new random image-level split:
 
 ## Model weights
 
-The large files are not stored in GitHub. Download the release archive from:
-
-```text
-https://drive.google.com/drive/folders/10TX81FeUtgi7aGWxu7vsqRi43Rg8pawa?usp=drive_link
-```
+The large files are not stored in GitHub. Manually download the release bundle
+from [Google Drive](https://drive.google.com/drive/folders/10TX81FeUtgi7aGWxu7vsqRi43Rg8pawa?usp=sharing).
+The evaluation scripts do not download weights automatically.
 
 Place the files as follows:
 
@@ -124,9 +123,11 @@ matching held-out fold:
 | `split3/rfdetr_dfc_sam_2xl_split3.pt` | Fold2, 2523 images |
 
 The evaluator checks the checkpoint split/test-fold metadata against the
-generated PanNuke manifest before starting inference. It loads the frozen
-inference and four-view TTA settings embedded in each checkpoint; the files in
-`configs/test/` are not used to override a release checkpoint.
+generated PanNuke manifest before starting inference. It runs exactly one
+identity-view forward pass and loads the frozen class-aware score settings from
+the matching checkpoint. Legacy TTA metadata stored in the released checkpoint
+is ignored by the public evaluator; the files in `configs/test/` are not used
+to override a release checkpoint.
 
 ```bash
 # One GPU, sequential evaluation
@@ -156,8 +157,8 @@ Final files are written to `results/threefold_test/summary/`:
 After all three splits finish, the terminal also prints the bPQ, mPQ, F1det,
 and Macro-F1 result for Split1, Split2, and Split3, followed by their mean.
 
-The evaluator never calibrates on a test fold. It only uses the TTA and
-class-aware settings embedded in the corresponding release checkpoint.
+The evaluator never calibrates on a test fold. It only uses the class-aware
+settings embedded in the corresponding release checkpoint.
 
 ## Main-experiment training
 
@@ -185,7 +186,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 bash scripts/train_3fold.sh
 
 The public training path contains the main stages used for the released
 checkpoints: RF-DETR-2XL
-detector training, DFB + SAM-H warmup, UGCA training, and the validation-only
+detector training, DFB + SAM-H warmup, UGCA-v3 training, and the validation-only
 calibration implementations under `tools/`. Calibration must be frozen before
 test evaluation. Rejected exploratory experiments and internal one-shot test
 ledger code are intentionally omitted.

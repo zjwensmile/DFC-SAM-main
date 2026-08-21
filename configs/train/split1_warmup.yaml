@@ -1,0 +1,75 @@
+base: ../test/split1.yaml
+
+experiment:
+  name: rfdetr_2xlarge_sam_h_dfc_sam_split1
+  protocol: pannuke_standard_3fold
+  split_id: 1
+  seed: 42
+  status: formal_frozen
+
+weights:
+  detector_stage1: ./outputs/rfdetr_stage1_sequence/20260809_191332/rfdetr_2xlarge/attempt_1/checkpoint_best_total.pth
+  sam_vit_h: weights/pretrained/sam_vit_h_4b8939.pth
+  warmup_stage2: ./outputs/rfdetr_dfc_sam/sam_h_split1/warmup/best.pt
+
+initialization:
+  student_sam: generic_sam_vit_h
+  student_decoder: generic_sam_vit_h
+
+ugca:
+  variant: quality_aware_v3
+  gate_hidden_dim: 64
+  residual_logit_cap: 1.0
+  quality_hidden_dim: 64
+  hard_negative_ratio: 1.0
+  hard_negative_max_per_image: 32
+  hard_negative_score_threshold: 0.05
+
+loss:
+  # Inverse-square-root weights from the official Split1 training fold (Fold1).
+  ugca_class_weights: [0.465235, 0.723964, 0.588258, 2.421685, 0.800858]
+  # The detector is immutable. Warmup optimizes segmentation; Joint optimizes
+  # quality-aware UGCA while preserving the selected Warmup Bridge/SAM state.
+  lambda_det: 0.0
+  lambda_seg: 1.0
+  lambda_ugca: 0.25
+  ugca_loss_normalization: per_image
+  ugca_gate_loss_weight: 0.25
+  ugca_preservation_loss_weight: 0.50
+  ugca_quality_loss_weight: 1.0
+  ugca_quality_mask_threshold: 0.50
+  ugca_quality_ranking_loss_weight: 0.25
+  ugca_quality_ranking_min_target_gap: 0.10
+  ugca_quality_ranking_margin: 0.20
+
+train:
+  flow: warmup_joint
+  joint_training_mode: rf_frozen_sequential
+  joint_detector_scope: all
+  train_student_decoder_in_joint: false
+  # A 12-hour unattended cap. Validation early stopping normally terminates
+  # earlier; 30 prevents a continuously improving run from overrunning a night.
+  warmup_epochs: 30
+  joint_epochs: 4
+  warmup_world_size_per_split: 4
+  joint_world_size_per_split: 4
+  # Fastest candidate profile. A real backward preflight decides whether two
+  # Verify that 1024px ViT-H images fit each V100 before formal artifacts are created.
+  batch_size_per_gpu: 2
+  gradient_accumulation: 4
+  learning_rates:
+    warmup_bridge: 5.0e-5
+    warmup_student_decoder: 1.0e-5
+    joint_ugca_shared: 5.0e-7
+    joint_ugca_quality: 2.0e-6
+
+validation:
+  initialize_joint_best_from_parent: true
+  early_stopping:
+    warmup: {enabled: true, min_epochs: 12, patience: 6, min_delta: 0.001}
+    joint: {enabled: true, min_epochs: 2, patience: 2, min_delta: 0.001}
+
+runtime:
+  num_workers: 8
+  instance_chunk_size: 8
+  inference_instance_chunk_size: 16

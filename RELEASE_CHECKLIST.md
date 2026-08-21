@@ -17,8 +17,8 @@
 - [ ] Copyright holder chooses the final license for project-authored code and replaces the staging `LICENSE`.
 - [ ] Confirm that the intended Roboflow Platform Agreement permits redistribution of the fine-tuned 2XL-derived checkpoints.
 - [ ] Confirm that the agreement also permits redistribution of `rf-detr-xxlarge.pth`; otherwise replace it with the official gated download instructions.
-- [ ] Upload `release_assets/DFC-SAM-RF2XL/` to external storage.
-- [ ] Replace `GOOGLE_DRIVE_URL_TO_BE_ADDED` in `README.md`.
+- [x] Upload the release weight bundle to external storage.
+- [x] Add the public Google Drive weight-bundle link to `README.md`.
 - [ ] Run the deferred clean-room isolation inference test.
 - [ ] Add the paper citation and final repository URL.
 - [ ] Create a fresh clone and run installation/data/weight verification commands exactly as documented.

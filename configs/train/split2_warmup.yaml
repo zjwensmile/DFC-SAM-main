@@ -1,0 +1,13 @@
+base: split1_warmup.yaml
+
+experiment:
+  name: rfdetr_2xlarge_sam_h_dfc_sam_split2
+  split_id: 2
+  status: formal_frozen
+
+weights:
+  detector_stage1: ./outputs/rfdetr_stage1_sequence/split2/rfdetr_2xlarge_best.pth
+  warmup_stage2: ./outputs/rfdetr_dfc_sam/sam_h_split2/warmup/best.pt
+
+loss:
+  ugca_class_weights: [0.485498, 0.709921, 0.565473, 2.461903, 0.777204]

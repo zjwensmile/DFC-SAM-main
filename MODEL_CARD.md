@@ -6,7 +6,7 @@
 - Segmenter: SAM-H
 - Coupling: RF multi-depth Differentiable Feature Bridge
 - Classification refinement: quality-aware UGCA-v3
-- Inference: split-specific class-aware four-view TTA
+- Inference: single-view (identity) with split-specific class-aware score settings
 - Input: 256x256 RGB PanNuke patches; detector branch is resized to 880x880 and
   SAM branch follows the standard 1024-pixel SAM transform
 
@@ -38,7 +38,7 @@ or patient-care decisions.
 - Dead-cell PQ is substantially lower than the other four classes.
 - Performance varies by tissue; Skin mPQ is the lowest three-fold tissue mean,
   and Uterus has high fold-to-fold variance.
-- Four-view TTA is compute intensive and approximately quadruples inference.
+- Results use single-view inference; no geometric TTA or model ensemble is used.
 - Results have only been established under the pinned PanNuke protocol and
   dependencies.
 
