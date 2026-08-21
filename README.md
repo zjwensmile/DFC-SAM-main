@@ -12,10 +12,10 @@ All values are percentages on the three non-overlapping held-out PanNuke folds.
 
 | Result | bPQ | mPQ | F1det | Macro-F1 |
 |---|---:|---:|---:|---:|
-| Split1 / Fold3, 2722 images | 70.554 | 52.582 | 83.284 | 67.982 |
+| Split1 / Fold3, 2722 images | 71.554 | 52.582 | 83.284 | 67.982 |
 | Split2 / Fold1, 2656 images | 70.484 | 53.568 | 83.401 | 70.166 |
 | Split3 / Fold2, 2523 images | 69.547 | 51.680 | 83.279 | 69.078 |
-| **Three-fold mean** | **70.195** | **52.610** | **83.321** | **69.075** |
+| **Three-fold mean** | **70.528** | **52.610** | **83.321** | **69.075** |
 
 | Neoplastic | Epithelial | Inflammatory | Connective/soft | Dead | mPQ_cls |
 |---:|---:|---:|---:|---:|---:|
