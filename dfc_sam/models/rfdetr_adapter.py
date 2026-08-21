@@ -22,7 +22,7 @@ from .yolo26_adapter import DetectorOutput
 class _DeterministicPositionEmbedding(nn.Module):
     """Exact sine positions for the integration's unpadded square RF feature grid.
 
-    CUDA cumsum has no strict-deterministic implementation on the P100.  Every
+    CUDA cumsum has no strict-deterministic implementation on the target GPU. Every
     RF input in this integration is the same fixed 880x880 shape, so its nested
     feature mask is all-false and cumsum(ones) is exactly a one-based arange.
     This instance-local replacement avoids relaxing determinism globally or

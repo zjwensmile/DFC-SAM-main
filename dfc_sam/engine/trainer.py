@@ -161,7 +161,7 @@ def move_batch_to_device(
 def build_grad_scaler(train_config: dict[str, Any], device: torch.device) -> torch.amp.GradScaler:
     enabled = bool(train_config["amp"]) and device.type == "cuda"
     if enabled and str(train_config.get("amp_dtype", "fp16")).lower() != "fp16":
-        raise ValueError("Tesla P100 formal runs support amp_dtype=fp16 only")
+        raise ValueError("Tesla V100 formal runs support amp_dtype=fp16 only")
     initial_scale = float(train_config.get("amp_initial_scale", 1024.0))
     if initial_scale <= 0:
         raise ValueError("amp_initial_scale must be positive")
