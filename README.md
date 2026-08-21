@@ -185,7 +185,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 bash scripts/train_3fold.sh
 
 The public training path contains the main stages used for the released
 checkpoints: RF-DETR-2XL
-detector training, DFB + SAM-H warmup, UGCA-v3 training, and the validation-only
+detector training, DFB + SAM-H warmup, UGCA training, and the validation-only
 calibration implementations under `tools/`. Calibration must be frozen before
 test evaluation. Rejected exploratory experiments and internal one-shot test
 ledger code are intentionally omitted.
